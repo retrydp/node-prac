@@ -7,15 +7,7 @@ const todos = [
 ];
 
 const server = http.createServer((req, res) => {
-  // res.statusCode = 404;
-  // res.setHeader('Content-type', 'application/json');
-  // res.setHeader('X-Powered-By', 'Node.js');
-
-  res.writeHead(405, {
-    'Content-type': 'application/json',
-    'X-Powered-By': 'Node.js',
-  });
-
+  const { method, url } = req;
   let body = [];
 
   req
@@ -24,15 +16,36 @@ const server = http.createServer((req, res) => {
     })
     .on('end', () => {
       body = Buffer.concat(body).toString();
-      console.log(body);
-    });
+      let status = 404;
+      const responce = {
+        success: false,
+        data: null,
+        error: null,
+      };
 
-  res.end(
-    JSON.stringify({
-      success: true,
-      data: todos,
-    }),
-  );
+      if (method === 'GET' && url === '/todos') {
+        status = 200;
+        responce.success = true;
+        responce.data = todos;
+      } else if (method === 'POST' && url === '/todos') {
+        const { id, text } = JSON.parse(body);
+        if (!id || !text) {
+          status = 400;
+          responce.error = 'Please add id and text';
+        } else {
+          todos.push({ id, text });
+          status = 201;
+          responce.success = true;
+          responce.data = todos;
+        }
+      }
+
+      res.writeHead(status, {
+        'Content-type': 'application/json',
+        'X-Powered-By': 'Node.js',
+      });
+      res.end(JSON.stringify(responce));
+    });
 });
 
 const PORT = 5000;
